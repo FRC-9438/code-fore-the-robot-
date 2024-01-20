@@ -7,6 +7,9 @@ package frc.robot.subsystems;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import java.util.function.DoubleSupplier;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
@@ -24,14 +27,14 @@ public class DriveSubsystem extends SubsystemBase {
   private DifferentialDrive m_drive;
   public DriveSubsystem() {
     m_FLM = new CANSparkMax(DriveConstants.kfrontLeftMotorID, SparkMaxConstants.ksparkMaxMotorType);
-    m_FRM = new CANSparkMax(frontRightID,MotorType.kBrushless);
-    m_BLM = new CANSparkMax(backLeftID,MotorType.kBrushless);
-    m_BRM = new CANSparkMax(backRightID,MotorType.kBrushless);
+    m_FRM = new CANSparkMax(DriveConstants.kfrontRightMotorID, SparkMaxConstants.ksparkMaxMotorType);
+    m_BLM = new CANSparkMax(DriveConstants.kbackLeftMotorID, SparkMaxConstants.ksparkMaxMotorType);
+    m_BRM = new CANSparkMax(DriveConstants.kbackRightMotorID, SparkMaxConstants.ksparkMaxMotorType);
 
-    m_FLM.setSmartCurrentLimit(40);
-    m_FRM.setSmartCurrentLimit(40);
-    m_BLM.setSmartCurrentLimit(40);
-    m_BRM.setSmartCurrentLimit(40);
+    m_FLM.setSmartCurrentLimit(SparkMaxConstants.ksparkMaxCurrentLimit);
+    m_FRM.setSmartCurrentLimit(SparkMaxConstants.ksparkMaxCurrentLimit);
+    m_BLM.setSmartCurrentLimit(SparkMaxConstants.ksparkMaxCurrentLimit);
+    m_BRM.setSmartCurrentLimit(SparkMaxConstants.ksparkMaxCurrentLimit);
 
     m_FLM.restoreFactoryDefaults();
     m_FRM.restoreFactoryDefaults();
@@ -44,10 +47,12 @@ public class DriveSubsystem extends SubsystemBase {
     m_FLM.setInverted(true);
     m_BLM.setInverted(true);
 
-    m_stick = new Joystick(0);
     m_drive = new DifferentialDrive(m_FLM, m_FRM);
   }
-  }
+  
+public void drive (DoubleSupplier speed, DoubleSupplier rot){
+  m_drive.arcadeDrive(speed.getAsDouble(), rot.getAsDouble());
+}
 
   @Override
   public void periodic() {
