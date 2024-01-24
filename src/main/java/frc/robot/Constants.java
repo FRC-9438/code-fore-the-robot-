@@ -5,6 +5,9 @@
 package frc.robot;
 
 import com.revrobotics.CANSparkLowLevel.MotorType;
+
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.util.Units;
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
  * constants. This class should not be used for any other purpose. All constants should be declared
@@ -24,6 +27,33 @@ public static class DriveConstants {
    public static final int kbackRightMotorID = 13;
 
    public static final boolean kleftSideInverted = true;
+
+   public static final double kVolts = 0.20322;
+   public static final double kVoltSecondsPerMeter = 3.22;
+   public static final double kSquaredPerMeter = 0.26;
+   public static final double kPDriveVel = 4.569;
+
+
+   public static final double kTrackWidthMeters = Units.inchesToMeters(24.75);
+   public static final DifferentialDriveKinematics kDriveKinematics = new DifferentialDriveKinematics(kTrackWidthMeters);
+
+   public static final double kGearRatio = 8.46;
+  
+   public static final double kWheelRadiusInches = 6;
+
+   private static final double kWheelDiamatorMeters = Units.inchesToMeters(18.84);
+   
+   public static final double KlinearDistanceConversionFactor = kWheelDiamatorMeters / kGearRatio;
+
+   public static final double kvelocityConversionFactor = KlinearDistanceConversionFactor/60;
+   
+   
+   public static final double kMaxSpeedMetersPerSecond = 3;
+   public static final double kMaxAccelerationPerSecondSquared = 3;
+
+   public static final double kRameseteB = 2;
+   public static final double kRamseteZeta = 0.7;
+
   }
 public static class SparkMaxConstants {
     public static final MotorType ksparkMaxMotorType = MotorType.kBrushless;
