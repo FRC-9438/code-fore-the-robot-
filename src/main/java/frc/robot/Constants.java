@@ -28,10 +28,10 @@ public static class DriveConstants {
 
    public static final boolean kleftSideInverted = true;
 
-   public static final double kVolts = 0.20322;
-   public static final double kVoltSecondsPerMeter = 3.22;
-   public static final double kSquaredPerMeter = 0.26;
-   public static final double kPDriveVel = 4.569;
+   public static final double kVolts = 0.22744;
+   public static final double kVoltSecondsPerMeter = 0.53285;
+   public static final double kSquaredPerMeter = 2.0871;
+   public static final double kPDriveVel = 0.11785;
 
 
    public static final double kTrackWidthMeters = Units.inchesToMeters(24.75);

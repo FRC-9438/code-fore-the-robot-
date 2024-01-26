@@ -4,18 +4,23 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import java.util.function.DoubleSupplier;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import com.revrobotics.CANSparkMax;
@@ -79,10 +84,21 @@ public class DriveSubsystem extends SubsystemBase {
 
 
     m_odometry = new DifferentialDriveOdometry(navX.getRotation2d(), leftEncoder.getPosition(), rightEncoder.getPosition());
+    m_odometry.resetPosition(new Pose2d(), navX.getRotation2d(), 0);
   }
   
 public void setBreakMode (){
-  
+  m_BLM.setIdleMode(IdleMode.kBrake);
+  m_FLM.setIdleMode(IdleMode.kBrake);
+  m_BRM.setIdleMode(IdleMode.kBrake);
+  m_FRM.setIdleMode(IdleMode.kBrake);
+}
+
+public void setCoastMode (){
+  m_BLM.setIdleMode(IdleMode.kCoast);
+  m_FLM.setIdleMode(IdleMode.kCoast);
+  m_BRM.setIdleMode(IdleMode.kCoast);
+  m_FRM.setIdleMode(IdleMode.kCoast);
 }
 
 
@@ -120,6 +136,50 @@ public static double getHeading() {
 
 public static double getTurnRate() {
   return -navX.getRate();
+}
+
+public Pose2d getPos() {
+  return m_odometry.getPoseMeters();
+}
+
+public void resetOdometry (Pose2d pose){
+  resetEncoders();
+  m_odometry.resetPosition(pose, navX.getRotation2d());
+}
+
+public DifferentialDriveWheelSpeeds getWheelSpeeds() {
+  return new DifferentialDriveWheelSpeeds(getLeftEncoderVelocity(), getRightEncoderVelocity());
+}
+
+public void tankDriveVolts (double leftVolts, double rightVolts){
+  m_FLM.setVoltage(leftVolts);
+  m_FRM.setVoltage(rightVolts);
+  m_drive.feed();
+}
+
+public double getAverageEncoderDistance() {
+
+  return (getLeftEncoderPosition() + getRightEncoderPosition()/2.0);
+}
+
+public RelativeEncoder getLeftEncoder() {
+    return leftEncoder;
+}
+
+public RelativeEncoder getRightEncoder() {
+  return rightEncoder;
+}
+
+public void setMaxOutput (double MaxOutput) {
+  m_drive.setMaxOutput(MaxOutput);
+}
+
+public static void zeroHeading (){
+  navX.reset();
+}
+
+public AHRS getGyro () {
+  return navX;
 }
 
   @Override
