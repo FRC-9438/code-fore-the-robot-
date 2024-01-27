@@ -10,7 +10,23 @@ import frc.robot.commands.DefaultDrive;
 import frc.robot.commands.ExampleCommand;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.ExampleSubsystem;
+
+import java.nio.file.Path;
+
+import javax.imageio.IIOException;
+
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.RamseteController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.proto.Trajectory;
+import edu.wpi.first.math.trajectory.TrajectoryUtil;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RamseteCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -20,6 +36,8 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
+
+
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
@@ -31,11 +49,41 @@ public class RobotContainer {
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
 
+  SendableChooser<Command> mChooser = SendableChooser<>();
+
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
     configureBindings();
+
+    mChooser.addOption("Curvy Path", object());
+    mChooser.addOption("Straight Path", object());
+
+    Shuffleboard.getTab("Autonomous").add(mChooser);
+
   }
+
+  public Command loadPathPlannerTrajectoryToRamseteCommand(String filename, boolean resetOdometry){
+      edu.wpi.first.math.trajectory.Trajectory trajectory;
+      try{
+        Path trajectoryPath = Filesystem.getDeployDirectory().toPath().resolve(filename);
+        trajectory = TrajectoryUtil.fromPathweaverJson(trajectoryPath);
+      }catch (IIOException exception){
+        DriverStation.reportError("Unable to open trajectory" + filename, exception.getStackTrace());
+        System.out.println("Unable to read from file" + filename);
+        return new InstantCommand();
+      }
+
+      RamseteCommand ramseteCommand = new RamseteCommand(trajectory, DriveSubsystem::getPose,
+      new RamseteController(Constants.DriveConstants.kRamseteB, Constants.DriveConstants.kRamseteZeta),
+      new SimpleMotorFeedforward(Constants.DriveConstants.kVolts, Constants.DriveConstants.kVoltSecondsPerMeter,
+          Constants.DriveConstants.kSquaredPerMeter),
+      Constants.DriveConstants.kDriveKinematics, DriveSubsystem::getWheelSpeeds,
+      new PIDController(Constants.DriveConstants.kPDriveVel, 0, 0),
+      new PIDController(Constants.DriveConstants.kPDriveVel, 0, 0), DriveSubsystem::tankDriveVolts,
+      m_driveSubsytem);
+    }
 
   /**
    * Use this method to define your trigger->command mappings. Triggers can be created via the

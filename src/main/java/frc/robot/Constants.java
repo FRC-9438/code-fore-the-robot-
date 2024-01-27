@@ -51,7 +51,7 @@ public static class DriveConstants {
    public static final double kMaxSpeedMetersPerSecond = 3;
    public static final double kMaxAccelerationPerSecondSquared = 3;
 
-   public static final double kRameseteB = 2;
+   public static final double kRamseteB = 2;
    public static final double kRamseteZeta = 0.7;
 
   }
