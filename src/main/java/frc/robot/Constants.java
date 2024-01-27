@@ -28,10 +28,12 @@ public static class DriveConstants {
 
    public static final boolean kleftSideInverted = true;
 
-   public static final double kVolts = 0.22744;
-   public static final double kVoltSecondsPerMeter = 0.53285;
-   public static final double kSquaredPerMeter = 2.0871;
+   public static final double ksVolts = 0.22744;
+   public static final double kvVoltSecondsPerMeter = 0.53285;
+   public static final double kaSquaredPerMeter = 2.0871;
    public static final double kPDriveVel = 0.11785;
+
+   public static final double kRotationsPerMinute = 5676;
 
 
    public static final double kTrackWidthMeters = Units.inchesToMeters(24.75);
@@ -45,7 +47,11 @@ public static class DriveConstants {
    
    public static final double KlinearDistanceConversionFactor = kWheelDiamatorMeters / kGearRatio;
 
-   public static final double kvelocityConversionFactor = KlinearDistanceConversionFactor/60;
+   //public static final double kvelocityConversionFactor = KlinearDistanceConversionFactor/60;
+
+   public static final double kvelocityConversionFactor = (kRotationsPerMinute / kGearRatio * kWheelDiamatorMeters) / 60;
+
+
    
    
    public static final double kMaxSpeedMetersPerSecond = 3;

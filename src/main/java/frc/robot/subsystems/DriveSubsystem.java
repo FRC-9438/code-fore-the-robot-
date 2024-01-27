@@ -4,27 +4,26 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
-import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import java.util.function.DoubleSupplier;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.util.ReplanningConfig;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkBase.IdleMode;
-import com.revrobotics.CANSparkLowLevel.MotorType;
-
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.SparkMaxConstants;
@@ -41,6 +40,10 @@ public class DriveSubsystem extends SubsystemBase {
   private RelativeEncoder rightEncoder;
 
   
+private final PIDController m_leftPIPidController = new PIDController(DriveConstants.kPDriveVel, 0, 0);
+private final PIDController m_rightPIPidController = new PIDController(DriveConstants.kPDriveVel, 0, 0);
+
+private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward (DriveConstants.ksVolts, DriveConstants.kaSquaredPerMeter);
 
 
   public DriveSubsystem() {
@@ -84,9 +87,32 @@ public class DriveSubsystem extends SubsystemBase {
 
 
     m_odometry = new DifferentialDriveOdometry(navX.getRotation2d(), leftEncoder.getPosition(), rightEncoder.getPosition());
-    m_odometry.resetPosition(new Pose2d(), navX.getRotation2d(), 0);
+    m_odometry.resetPosition(navX.getRotation2d(), leftEncoder.getPosition(), rightEncoder.getPosition(), new Pose2d());
+  
+    AutoBuilder.configureRamsete(
+                this::getPose, // Robot pose supplier
+                this::resetOdometry, // Method to reset odometry (will be called if your auto has a starting pose)
+                this::getChassisSpeeds, // Current ChassisSpeeds supplier
+                this::autoDrive, // Method that will drive the robot given ChassisSpeeds
+                new ReplanningConfig(), // Default path replanning config. See the API for the options here
+                () -> {
+                    // Boolean supplier that controls when the path will be mirrored for the red alliance
+                    // This will flip the path being followed to the red side of the field.
+                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+                    var alliance = DriverStation.getAlliance();
+                    if (alliance.isPresent()) {
+                        return alliance.get() == DriverStation.Alliance.Red;
+                    }
+                    return false;
+                },
+                this // Reference to this subsystem to set requirements
+        );
+
   }
   
+//closes 
+
 public void setBreakMode (){
   m_BLM.setIdleMode(IdleMode.kBrake);
   m_FLM.setIdleMode(IdleMode.kBrake);
@@ -138,23 +164,43 @@ public static double getTurnRate() {
   return -navX.getRate();
 }
 
-public Pose2d getPos() {
+public Pose2d getPose() {
   return m_odometry.getPoseMeters();
 }
 
 public void resetOdometry (Pose2d pose){
   resetEncoders();
-  m_odometry.resetPosition(pose, navX.getRotation2d());
+  m_odometry.resetPosition(navX.getRotation2d(), leftEncoder.getPosition(), rightEncoder.getPosition(), pose);
 }
 
 public DifferentialDriveWheelSpeeds getWheelSpeeds() {
   return new DifferentialDriveWheelSpeeds(getLeftEncoderVelocity(), getRightEncoderVelocity());
 }
 
+public ChassisSpeeds getChassisSpeeds () {
+  return DriveConstants.kDriveKinematics.toChassisSpeeds(getWheelSpeeds());
+}
+
 public void tankDriveVolts (double leftVolts, double rightVolts){
   m_FLM.setVoltage(leftVolts);
   m_FRM.setVoltage(rightVolts);
   m_drive.feed();
+}
+
+public void autoDrive (ChassisSpeeds chassisSpeeds) {
+  DifferentialDriveWheelSpeeds speeds = DriveConstants.kDriveKinematics.toWheelSpeeds(chassisSpeeds);
+
+  final double leftFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
+  final double rightFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
+
+  final double leftOutput =
+    m_leftPIPidController.calculate(leftEncoder.getPosition(), speeds.leftMetersPerSecond);
+  final double rightOutput =   
+    m_rightPIPidController.calculate(rightEncoder.getPosition(), speeds.rightMetersPerSecond);
+
+    m_FLM.setVoltage(leftOutput + leftFeedforward);
+    m_FRM.setVoltage(rightOutput + rightFeedforward);
+    m_drive.feed();
 }
 
 public double getAverageEncoderDistance() {
