@@ -9,10 +9,12 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelPositions;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -43,7 +45,10 @@ public class DriveSubsystem extends SubsystemBase {
 private final PIDController m_leftPIPidController = new PIDController(DriveConstants.kPDriveVel, 0, 0);
 private final PIDController m_rightPIPidController = new PIDController(DriveConstants.kPDriveVel, 0, 0);
 
-private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward (DriveConstants.ksVolts, DriveConstants.kaSquaredPerMeter);
+private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward(DriveConstants.ksVolts, DriveConstants.kvVoltSecondsPerMeter, DriveConstants.kaSquaredPerMeter);
+
+private final Field2d m_field = new Field2d();
+
 
 
   public DriveSubsystem() {
@@ -85,9 +90,11 @@ private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward 
 
     m_drive = new DifferentialDrive(m_FLM, m_FRM);
 
+    SmartDashboard.putData("Field", m_field);
 
-    m_odometry = new DifferentialDriveOdometry(navX.getRotation2d(), leftEncoder.getPosition(), rightEncoder.getPosition());
-    m_odometry.resetPosition(navX.getRotation2d(), leftEncoder.getPosition(), rightEncoder.getPosition(), new Pose2d());
+
+    m_odometry = new DifferentialDriveOdometry(navX.getRotation2d(), getLeftEncoderPosition(), getRightEncoderPosition());
+    m_odometry.resetPosition(navX.getRotation2d(), getLeftEncoderPosition(), getRightEncoderPosition(), new Pose2d());
   
     AutoBuilder.configureRamsete(
                 this::getPose, // Robot pose supplier
@@ -137,19 +144,19 @@ public void arcadeDrive(double fwd, double rot) {
 }
 
 public double getRightEncoderPosition() {
-  return rightEncoder.getPosition();
+  return -rightEncoder.getPosition();
 }
 
 public double getLeftEncoderPosition() {
-  return rightEncoder.getPosition();
+  return -leftEncoder.getPosition();
 }
 
 public double getRightEncoderVelocity() {
-  return rightEncoder.getVelocity();
+  return -rightEncoder.getVelocity();
 }
 
 public double getLeftEncoderVelocity() {
-  return leftEncoder.getVelocity();
+  return -leftEncoder.getVelocity();
 }
 
 public void drive (DoubleSupplier speed, DoubleSupplier rot){
@@ -170,7 +177,7 @@ public Pose2d getPose() {
 
 public void resetOdometry (Pose2d pose){
   resetEncoders();
-  m_odometry.resetPosition(navX.getRotation2d(), leftEncoder.getPosition(), rightEncoder.getPosition(), pose);
+  m_odometry.resetPosition(navX.getRotation2d(), getLeftEncoderPosition(), getRightEncoderPosition(), pose);
 }
 
 public DifferentialDriveWheelSpeeds getWheelSpeeds() {
@@ -190,13 +197,13 @@ public void tankDriveVolts (double leftVolts, double rightVolts){
 public void autoDrive (ChassisSpeeds chassisSpeeds) {
   DifferentialDriveWheelSpeeds speeds = DriveConstants.kDriveKinematics.toWheelSpeeds(chassisSpeeds);
 
-  final double leftFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
-  final double rightFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
+  final double leftFeedforward = m_feedforward.calculate(-speeds.leftMetersPerSecond);
+  final double rightFeedforward = m_feedforward.calculate(-speeds.leftMetersPerSecond);
 
   final double leftOutput =
-    m_leftPIPidController.calculate(leftEncoder.getPosition(), speeds.leftMetersPerSecond);
+    m_leftPIPidController.calculate(getLeftEncoderPosition(), speeds.leftMetersPerSecond);
   final double rightOutput =   
-    m_rightPIPidController.calculate(rightEncoder.getPosition(), speeds.rightMetersPerSecond);
+    m_rightPIPidController.calculate(getRightEncoderPosition(), speeds.rightMetersPerSecond);
 
     m_FLM.setVoltage(leftOutput + leftFeedforward);
     m_FRM.setVoltage(rightOutput + rightFeedforward);
@@ -231,12 +238,16 @@ public AHRS getGyro () {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-  m_odometry.update(navX.getRotation2d(), leftEncoder.getPosition(), rightEncoder.getPosition());
+  m_odometry.update(navX.getRotation2d(), getLeftEncoderPosition(), getRightEncoderPosition ());
 
   //SmartDashboard.putNumber("leftEncoderDistanceMeters", leftEncoder.getPosition());
   SmartDashboard.putNumber("Left Encoder Value Meters", getLeftEncoderPosition());
   SmartDashboard.putNumber("Right Encoder Value Meters", getRightEncoderPosition());
+  SmartDashboard.putNumber("Left Velocity",getLeftEncoderVelocity());
+  SmartDashboard.putNumber("Right Velocity",getRightEncoderVelocity());
   SmartDashboard.putNumber("Gyro heading", getHeading());
+  SmartDashboard.putString("PosMeters", m_odometry.getPoseMeters().toString());
+  m_field.setRobotPose(m_odometry.getPoseMeters());
 
   }
 }
