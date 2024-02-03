@@ -14,6 +14,7 @@ import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive.WheelSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -49,7 +50,7 @@ private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward(
 
 private final Field2d m_field = new Field2d();
 
-
+private DifferentialDriveWheelSpeeds m_wheelspeeds;
 
   public DriveSubsystem() {
     m_FLM = new CANSparkMax(DriveConstants.kfrontLeftMotorID, SparkMaxConstants.ksparkMaxMotorType);
@@ -196,7 +197,7 @@ public void tankDriveVolts (double leftVolts, double rightVolts){
 
 public void autoDrive (ChassisSpeeds chassisSpeeds) {
   DifferentialDriveWheelSpeeds speeds = DriveConstants.kDriveKinematics.toWheelSpeeds(chassisSpeeds);
-
+  m_wheelspeeds = speeds;
   final double leftFeedforward = m_feedforward.calculate(-speeds.leftMetersPerSecond);
   final double rightFeedforward = m_feedforward.calculate(-speeds.rightMetersPerSecond);
 
@@ -209,6 +210,8 @@ public void autoDrive (ChassisSpeeds chassisSpeeds) {
     m_FRM.setVoltage(rightOutput + rightFeedforward);
     m_drive.feed();
 }
+
+
 
 public double getAverageEncoderDistance() {
 
@@ -247,7 +250,12 @@ public AHRS getGyro () {
   SmartDashboard.putNumber("Right Velocity",getRightEncoderVelocity());
   SmartDashboard.putNumber("Gyro heading", getHeading());
   SmartDashboard.putString("PosMeters", m_odometry.getPoseMeters().toString());
+  SmartDashboard.putNumber("ppwheelspeedsLeft", m_wheelspeeds.leftMetersPerSecond);
+  SmartDashboard.putNumber("ppwheelspeedsRight", m_wheelspeeds.rightMetersPerSecond);
+  SmartDashboard.putNumber("leftFeedForward", m_feedforward.calculate(getLeftEncoderPosition(), -m_wheelspeeds.leftMetersPerSecond));
+  SmartDashboard.putNumber("rightFeedForward", m_feedforward.calculate(getRightEncoderPosition(), -m_wheelspeeds.rightMetersPerSecond));
+  SmartDashboard.putNumber("left PID", m_leftPIPidController.calculate(getLeftEncoderPosition(), -m_wheelspeeds.leftMetersPerSecond));
+  SmartDashboard.putNumber("right PID", m_leftPIPidController.calculate(getRightEncoderPosition(), -m_wheelspeeds.rightMetersPerSecond));
   m_field.setRobotPose(m_odometry.getPoseMeters());
-
   }
 }
