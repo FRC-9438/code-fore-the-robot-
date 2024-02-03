@@ -12,6 +12,7 @@ import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelPositions;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive.WheelSpeeds;
@@ -50,7 +51,7 @@ private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward(
 
 private final Field2d m_field = new Field2d();
 
-private DifferentialDriveWheelSpeeds m_wheelspeeds;
+private DifferentialDriveWheelSpeeds m_wheelspeeds = new DifferentialDriveWheelSpeeds();
 
   public DriveSubsystem() {
     m_FLM = new CANSparkMax(DriveConstants.kfrontLeftMotorID, SparkMaxConstants.ksparkMaxMotorType);
@@ -101,7 +102,9 @@ private DifferentialDriveWheelSpeeds m_wheelspeeds;
                 this::getPose, // Robot pose supplier
                 this::resetOdometry, // Method to reset odometry (will be called if your auto has a starting pose)
                 this::getChassisSpeeds, // Current ChassisSpeeds supplier
-                this::autoDrive, // Method that will drive the robot given ChassisSpeeds
+                this::autoDrive,
+                DriveConstants.kRamseteB,
+                DriveConstants.kRamseteZeta, // Method that will drive the robot given ChassisSpeeds
                 new ReplanningConfig(), // Default path replanning config. See the API for the options here
                 () -> {
                     // Boolean supplier that controls when the path will be mirrored for the red alliance
@@ -256,6 +259,8 @@ public AHRS getGyro () {
   SmartDashboard.putNumber("rightFeedForward", m_feedforward.calculate(getRightEncoderPosition(), -m_wheelspeeds.rightMetersPerSecond));
   SmartDashboard.putNumber("left PID", m_leftPIPidController.calculate(getLeftEncoderPosition(), -m_wheelspeeds.leftMetersPerSecond));
   SmartDashboard.putNumber("right PID", m_leftPIPidController.calculate(getRightEncoderPosition(), -m_wheelspeeds.rightMetersPerSecond));
+  SmartDashboard.putNumber("Left Voltage", m_FLM.get());
+  SmartDashboard.putNumber("Right Voltage", m_FRM.get());
   m_field.setRobotPose(m_odometry.getPoseMeters());
   }
 }
