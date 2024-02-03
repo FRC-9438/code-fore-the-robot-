@@ -198,12 +198,12 @@ public void autoDrive (ChassisSpeeds chassisSpeeds) {
   DifferentialDriveWheelSpeeds speeds = DriveConstants.kDriveKinematics.toWheelSpeeds(chassisSpeeds);
 
   final double leftFeedforward = m_feedforward.calculate(-speeds.leftMetersPerSecond);
-  final double rightFeedforward = m_feedforward.calculate(-speeds.leftMetersPerSecond);
+  final double rightFeedforward = m_feedforward.calculate(-speeds.rightMetersPerSecond);
 
   final double leftOutput =
-    m_leftPIPidController.calculate(getLeftEncoderPosition(), speeds.leftMetersPerSecond);
+    m_leftPIPidController.calculate(getLeftEncoderPosition(), -speeds.leftMetersPerSecond);
   final double rightOutput =   
-    m_rightPIPidController.calculate(getRightEncoderPosition(), speeds.rightMetersPerSecond);
+    m_rightPIPidController.calculate(getRightEncoderPosition(), -speeds.rightMetersPerSecond);
 
     m_FLM.setVoltage(leftOutput + leftFeedforward);
     m_FRM.setVoltage(rightOutput + rightFeedforward);

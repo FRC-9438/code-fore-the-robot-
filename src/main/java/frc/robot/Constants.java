@@ -28,13 +28,13 @@ public static class DriveConstants {
 
    public static final boolean kleftSideInverted = true;
 
-   public static final double ksVolts = .20003;
+   public static final double ksVolts = .22744;
 
-   public static final double kvVoltSecondsPerMeter = 2.16;
+   public static final double kvVoltSecondsPerMeter = 2.0871;
    //2.0871
-   public static final double kaSquaredPerMeter = 0.38;
+   public static final double kaSquaredPerMeter = 0.53285;
    //.53285
-   public static final double kPDriveVel = 0.0093751;
+   public static final double kPDriveVel = 0.11785;
      //.11785 
      //0.0093751
    public static final double kRotationsPerMinute = 5676;
